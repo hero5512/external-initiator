@@ -1,13 +1,12 @@
 package client
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/smartcontractkit/chainlink/core/logger"
 	"github.com/smartcontractkit/external-initiator/blockchain"
 	"github.com/smartcontractkit/external-initiator/store"
-	"log"
 	"net/http"
 )
 
@@ -32,7 +31,7 @@ func RunWebserver(
 	srv := NewHTTPService(accessKey, secret, store)
 	err := srv.Router.Run()
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(err)
 	}
 }
 
@@ -126,25 +125,25 @@ func (srv *HttpService) CreateSubscription(c *gin.Context) {
 	var req CreateSubscriptionReq
 
 	if err := c.BindJSON(&req); err != nil {
-		log.Println(err)
+		logger.Error(err)
 		c.JSON(http.StatusBadRequest, nil)
 		return
 	}
 
 	endpoint, err := srv.Store.GetEndpoint(req.Params.Endpoint)
 	if err != nil {
-		log.Println(err)
+		logger.Error(err)
 		c.JSON(http.StatusInternalServerError, nil)
 		return
 	}
 	if endpoint == nil {
-		log.Println("unknown endpoint provided")
+		logger.Error("unknown endpoint provided")
 		c.JSON(http.StatusBadRequest, nil)
 		return
 	}
 
 	if err := validateRequest(&req, endpoint.Type); err != nil {
-		log.Println(err)
+		logger.Error(err)
 		c.JSON(http.StatusBadRequest, nil)
 		return
 	}
@@ -159,7 +158,7 @@ func (srv *HttpService) CreateSubscription(c *gin.Context) {
 	blockchain.CreateSubscription(sub, req.Params)
 
 	if err := srv.Store.SaveSubscription(sub); err != nil {
-		log.Println(err)
+		logger.Error(err)
 		c.JSON(http.StatusInternalServerError, nil)
 		return
 	}
@@ -172,7 +171,7 @@ func (srv *HttpService) CreateSubscription(c *gin.Context) {
 func (srv *HttpService) DeleteSubscription(c *gin.Context) {
 	jobid := c.Param("jobid")
 	if err := srv.Store.DeleteJob(jobid); err != nil {
-		log.Println(err)
+		logger.Error(err)
 		c.JSON(http.StatusInternalServerError, nil)
 		return
 	}
@@ -192,13 +191,13 @@ func (srv *HttpService) CreateEndpoint(c *gin.Context) {
 	var config store.Endpoint
 	err := c.BindJSON(&config)
 	if err != nil {
-		log.Println(err)
+		logger.Error(err)
 		c.JSON(http.StatusBadRequest, nil)
 		return
 	}
 
 	if err := srv.Store.SaveEndpoint(&config); err != nil {
-		log.Println(err)
+		logger.Error(err)
 		c.JSON(http.StatusInternalServerError, nil)
 		return
 	}

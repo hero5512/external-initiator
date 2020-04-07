@@ -2,13 +2,12 @@ package client
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/pkg/errors"
+	"github.com/smartcontractkit/chainlink/core/logger"
 	"github.com/smartcontractkit/external-initiator/blockchain"
 	"github.com/smartcontractkit/external-initiator/chainlink"
 	"github.com/smartcontractkit/external-initiator/store"
 	"github.com/smartcontractkit/external-initiator/subscriber"
-	"log"
 	"net/url"
 	"os"
 	"os/signal"
@@ -36,7 +35,7 @@ func startService(
 ) {
 	clUrl, err := url.Parse(normalizeLocalhost(config.ChainlinkURL))
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 
 	srv := NewService(dbClient, chainlink.Node{
@@ -53,9 +52,8 @@ func startService(
 			continue
 		}
 		err = srv.SaveEndpoint(&endpoint)
-		if err != nil {
-			fmt.Println(err)
-		}
+		logger.ErrorIf(err)
+
 		names = append(names, endpoint.Name)
 	}
 
@@ -63,15 +61,13 @@ func startService(
 	// should be deleted
 	if len(names) > 0 {
 		err = srv.store.DeleteAllEndpointsExcept(names)
-		if err != nil {
-			fmt.Println(err)
-		}
+		logger.ErrorIf(err)
 	}
 
 	go func() {
 		err := srv.Run()
 		if err != nil {
-			log.Fatal(err)
+			logger.Fatal(err)
 		}
 	}()
 
@@ -80,7 +76,7 @@ func startService(
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 	<-sig
-	fmt.Println("Shutting down...")
+	logger.Info("Shutting down...")
 	srv.Close()
 	os.Exit(0)
 }
@@ -133,14 +129,12 @@ func (srv *Service) Run() error {
 	for _, sub := range subs {
 		iSubscriber, err := srv.getAndTestSubscription(&sub)
 		if err != nil {
-			fmt.Println(err)
+			logger.Error(err)
 			continue
 		}
 
 		err = srv.subscribe(&sub, iSubscriber)
-		if err != nil {
-			fmt.Println(err)
-		}
+		logger.ErrorIf(err)
 	}
 
 	return nil
@@ -181,11 +175,10 @@ func (srv *Service) Close() {
 		closeSubscription(sub)
 	}
 
-	if err := srv.store.Close(); err != nil {
-		fmt.Println(err)
-	}
+	err := srv.store.Close()
+	logger.ErrorIf(err)
 
-	fmt.Println("All connections closed. Bye!")
+	logger.Info("All connections closed. Bye!")
 }
 
 type activeSubscription struct {
@@ -204,7 +197,7 @@ func (srv *Service) subscribe(sub *store.Subscription, iSubscriber subscriber.IS
 
 	subscription, err := iSubscriber.SubscribeToEvents(events)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	as := &activeSubscription{
@@ -225,9 +218,8 @@ func (srv *Service) subscribe(sub *store.Subscription, iSubscriber subscriber.IS
 			if !ok {
 				return
 			}
-			if err := as.Node.TriggerJob(as.Subscription.Job, event); err != nil {
-				fmt.Println(err)
-			}
+			err := as.Node.TriggerJob(as.Subscription.Job, event)
+			logger.ErrorIf(err)
 		}
 	}()
 
