@@ -19,6 +19,8 @@ func HandleRequest(conn, platform string, msg JsonrpcMessage) ([]JsonrpcMessage,
 	switch platform {
 	case "eth":
 		return HandleEthRequest(conn, msg)
+	case "sub":
+		return HandleSubRequest(conn, msg)
 	default:
 		return nil, errors.New(fmt.Sprint("unexpected platform: ", platform))
 	}

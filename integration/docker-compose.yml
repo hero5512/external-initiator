@@ -53,6 +53,7 @@ services:
     command:
       - '{"name":"eth-mock-http","type":"ethereum","url":"http://integration_mock_1:8080/eth","refreshInterval":600}'
       - '{"name":"eth-mock-ws","type":"ethereum","url":"ws://integration_mock_1:8080/ws/eth"}'
+      - '{"name":"sub-mock-ws","type":"substrate","url":"ws://integration_mock_1:8080/ws/sub"}'
 volumes:
   pg:
   cl:
