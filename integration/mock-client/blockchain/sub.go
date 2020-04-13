@@ -65,7 +65,7 @@ func handleSubSubscribe(msg JsonrpcMessage) ([]JsonrpcMessage, error) {
 		Payment:            0,
 		Topics:             nil,
 	}
-	ev, _ := json.Marshal(&event)
+	ev, _ := types.EncodeToBytes(event)
 
 	data := types.NewStorageDataRaw(ev)
 	keyValue.StorageData = data
