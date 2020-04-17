@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type JsonrpcMessage struct {
@@ -22,4 +26,33 @@ func HandleRequest(conn, platform string, msg JsonrpcMessage) ([]JsonrpcMessage,
 	default:
 		return nil, errors.New(fmt.Sprint("unexpected platform: ", platform))
 	}
+}
+
+func SetHttpRoutes(routerGroup *gin.RouterGroup) {
+	routerGroup.GET("/xtz/monitor/heads/:chain_id", HandleXtzMonitorRequest)
+	routerGroup.GET("/xtz/chains/main/blocks/:block_id/operations", HandleXtzOperationsRequest)
+}
+
+func HandleXtzMonitorRequest(c *gin.Context) {
+	resp, err := GetXtzMonitorResponse(c.Param("chain_id"))
+
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusBadRequest, resp)
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+func HandleXtzOperationsRequest(c *gin.Context) {
+	resp, err := GetXtzOperationsResponse(c.Param("block_id"))
+
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusBadRequest, resp)
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
 }

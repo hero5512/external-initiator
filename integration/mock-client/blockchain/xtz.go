@@ -57,7 +57,7 @@ type XtzInternalOperationResult struct {
 type XtzNullValue struct {
 }
 
-func HandleXtzMonitorRequest(chainId string) (XtzMonitorResponse, error) {
+func GetXtzMonitorResponse(chainId string) (XtzMonitorResponse, error) {
 	return XtzMonitorResponse{
 		Hash:           "8BADF00D8BADF00D8BADF00D8BADF00D8BADF00D8BADF00D8BADF00D",
 		Level:          0,
@@ -70,7 +70,7 @@ func HandleXtzMonitorRequest(chainId string) (XtzMonitorResponse, error) {
 	}, nil
 }
 
-func HandleXtzOperationsRequest(blockId string) ([][]XtzTransaction, error) {
+func GetXtzOperationsResponse(blockId string) ([][]XtzTransaction, error) {
 	subscriptionAddress := os.Getenv("SUBSCRIBED_ADDRESS")
 
 	transactionContents := []XtzTransactionContent{
