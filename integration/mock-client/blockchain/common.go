@@ -4,8 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"path"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,6 +30,45 @@ func HandleRequest(conn, platform string, msg JsonrpcMessage) ([]JsonrpcMessage,
 	default:
 		return nil, errors.New(fmt.Sprint("unexpected platform: ", platform))
 	}
+}
+
+type MockResponse struct {
+	Path   string      `json:"path"`
+	Method string      `json:"method"`
+	Code   int         `json:"code"`
+	Body   interface{} `json:"body"`
+}
+
+func SetHttpRoutesFromJSON(routerGroup *gin.RouterGroup) error {
+	wd, _ := os.Getwd()
+	responsesPath := path.Join(wd, "mock-responses")
+	files, err := ioutil.ReadDir(responsesPath)
+
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		path := path.Join(responsesPath, f.Name())
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		data, err := ioutil.ReadAll(file)
+
+		var resp MockResponse
+		err = json.Unmarshal(data, &resp)
+		if err != nil {
+			return err
+		}
+		routerGroup.Handle(strings.ToUpper(resp.Method), resp.Path, func(c *gin.Context) {
+			c.JSON(resp.Code, resp.Body)
+		})
+	}
+
+	return nil
 }
 
 func SetHttpRoutes(routerGroup *gin.RouterGroup) {
